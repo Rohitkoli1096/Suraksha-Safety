@@ -15,6 +15,7 @@ import {
 import { api } from '../api/client';
 import { SafeRouteOption } from '../types';
 import { SafeRouteMap } from '../components/SafeRouteMap';
+import { OfflineRouteTileDownloader } from '../components/OfflineRouteTileDownloader';
 
 export const RoutesPage: React.FC = () => {
   const [source, setSource] = useState('Connaught Place, Central Delhi');
@@ -184,6 +185,14 @@ export const RoutesPage: React.FC = () => {
 
         {/* Right 2 Columns: Detailed Route Breakdown & Safe Havens */}
         <div className="lg:col-span-2 space-y-6">
+          {activeRoute && (
+            <OfflineRouteTileDownloader
+              activeRoute={activeRoute}
+              sourceText={source}
+              destinationText={destination}
+            />
+          )}
+
           {activeRoute && (
             <SafeRouteMap
               activeRoute={activeRoute}

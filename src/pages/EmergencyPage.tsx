@@ -21,6 +21,8 @@ import { triggerHaptic, hapticPatterns } from '../utils/haptics';
 import { FakeCallModal } from '../components/FakeCallModal';
 import { EmergencyQuickShare } from '../components/EmergencyQuickShare';
 import { AudioEvidenceRecorder } from '../components/AudioEvidenceRecorder';
+import { VoiceSOSTriggerButton } from '../components/VoiceSOSTriggerButton';
+import { useVoiceSOSStore } from '../store/voiceSOSStore';
 import { offlineEmergencyCache } from '../utils/offlineEmergencyCache';
 
 export const EmergencyPage: React.FC = () => {
@@ -183,6 +185,9 @@ export const EmergencyPage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Hands-Free Voice SOS Trigger Card (Pocket & Screen-Lock Armed) */}
+      <VoiceSOSTriggerButton variant="full" />
 
       {/* Native Offline & Low-Connectivity One-Tap Dispatch */}
       <EmergencyQuickShare />

@@ -162,6 +162,11 @@ export interface UserSettings {
   smsAlertsEnabled: boolean;
   pushNotificationsEnabled: boolean;
   shakeToSOSGestureEnabled: boolean;
+  voiceSOSEnabled?: boolean;
+  voiceSOSKeyword?: string;
+  voiceSOSSensitivity?: 'HIGH' | 'BALANCED' | 'LOW';
+  voiceSOSPocketMode?: boolean;
+  voiceSOSLanguage?: string;
   highContrastTheme: boolean;
   theme: 'light' | 'dark' | 'system';
 }

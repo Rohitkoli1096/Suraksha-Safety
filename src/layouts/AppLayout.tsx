@@ -17,10 +17,13 @@ import { api } from '../api/client';
 import { AppNotification } from '../types';
 import { FakeCallModal } from '../components/FakeCallModal';
 import { GlobalSearchModal } from '../components/GlobalSearchModal';
-import { AppHeader } from '../components/navigation/AppHeader';
+import { VoiceSOSModal } from '../components/VoiceSOSModal';
+import { useVoiceSOSStore } from '../store/voiceSOSStore';
+import { AppHeader } from '../components/layout/AppHeader';
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuthStore();
+  const { isModalOpen, setModalOpen } = useVoiceSOSStore();
   const {
     activeSOS,
     isSirenPlaying,
@@ -231,6 +234,9 @@ export const AppLayout: React.FC = () => {
 
       {/* Global Decoy Fake Call Modal */}
       <FakeCallModal isOpen={fakeCallOpen} onClose={() => setFakeCallOpen(false)} />
+
+      {/* Global Voice SOS Guardian Modal */}
+      <VoiceSOSModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { dbStore } from '../services/dbStore.js';
+import { dbStore, StoredSettings } from '../services/dbStore.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -114,7 +114,7 @@ router.get('/settings', authenticateToken, (req: AuthRequest, res) => {
     let settings = dbStore.settings.get(userId);
 
     if (!settings) {
-      settings = {
+      const defaultSettings: StoredSettings = {
         userId,
         sosCountdownDurationSeconds: 5,
         sirenAudioEnabled: true,
@@ -122,10 +122,16 @@ router.get('/settings', authenticateToken, (req: AuthRequest, res) => {
         smsAlertsEnabled: true,
         pushNotificationsEnabled: true,
         shakeToSOSGestureEnabled: true,
+        voiceSOSEnabled: true,
+        voiceSOSKeyword: 'bachao',
+        voiceSOSSensitivity: 'BALANCED',
+        voiceSOSPocketMode: true,
+        voiceSOSLanguage: 'en-IN',
         highContrastTheme: false,
         theme: 'system',
       };
-      dbStore.settings.set(userId, settings);
+      dbStore.settings.set(userId, defaultSettings);
+      settings = defaultSettings;
     }
 
     res.json({ success: true, data: settings });
@@ -149,6 +155,11 @@ router.put('/settings', authenticateToken, (req: AuthRequest, res) => {
         smsAlertsEnabled: true,
         pushNotificationsEnabled: true,
         shakeToSOSGestureEnabled: true,
+        voiceSOSEnabled: true,
+        voiceSOSKeyword: 'bachao',
+        voiceSOSSensitivity: 'BALANCED',
+        voiceSOSPocketMode: true,
+        voiceSOSLanguage: 'en-IN',
         highContrastTheme: false,
         theme: 'system',
       };

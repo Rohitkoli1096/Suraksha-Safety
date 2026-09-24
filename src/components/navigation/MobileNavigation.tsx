@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   MapPin,
@@ -17,10 +17,10 @@ import {
   LogOut,
   ChevronDown,
   X,
-} from "lucide-react";
-import { useAuthStore } from "../../store/authStore";
-import { useSOSStore } from "../../store/sosStore";
-import { PWAInstallButton } from "../PWAInstallButton";
+} from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import { useSOSStore } from '../../store/sosStore';
+import { PWAInstallButton } from '../PWAInstallButton';
 
 interface MobileNavigationProps {
   isOpen: boolean;
@@ -44,23 +44,23 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
   if (!isOpen) return null;
 
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SAFETY_ADMIN";
-  const isEmergencyActive = activeSOS && activeSOS.status === "ACTIVE";
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SAFETY_ADMIN';
+  const isEmergencyActive = activeSOS && activeSOS.status === 'ACTIVE';
 
   const handleSOSClick = () => {
     onClose();
     if (!isEmergencyActive) {
       startSOSCountdown(5);
-      navigate("/sos");
+      navigate('/sos');
     } else {
-      navigate("/sos");
+      navigate('/sos');
     }
   };
 
   const handleSignOut = () => {
     onClose();
     logout();
-    navigate("/login");
+    navigate('/login');
   };
 
   return (
@@ -128,9 +128,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-colors ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600"
-                    : "text-slate-700 hover:bg-slate-50"
+                  isActive ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'
                 }`
               }
             >
@@ -144,15 +142,13 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               onClick={handleSOSClick}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-all ${
                 isEmergencyActive
-                  ? "bg-red-600 text-white animate-pulse"
-                  : "bg-red-50 text-red-700 border border-red-200"
+                  ? 'bg-red-600 text-white animate-pulse'
+                  : 'bg-red-50 text-red-700 border border-red-200'
               }`}
             >
               <div className="flex items-center gap-3">
                 <ShieldAlert className="w-4 h-4 text-red-600" />
-                <span>
-                  {isEmergencyActive ? "SOS Emergency Active" : "Emergency SOS"}
-                </span>
+                <span>{isEmergencyActive ? 'SOS Emergency Active' : 'Emergency SOS'}</span>
               </div>
               <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-mono font-bold">
                 PANIC
@@ -172,7 +168,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 </div>
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                    safetySectionOpen ? "rotate-180 text-indigo-600" : ""
+                    safetySectionOpen ? 'rotate-180 text-indigo-600' : ''
                   }`}
                 />
               </button>
@@ -224,9 +220,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-colors ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600"
-                    : "text-slate-700 hover:bg-slate-50"
+                  isActive ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'
                 }`
               }
             >
@@ -240,9 +234,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-colors ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600"
-                    : "text-slate-700 hover:bg-slate-50"
+                  isActive ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'
                 }`
               }
             >
@@ -256,9 +248,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-colors ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600"
-                    : "text-slate-700 hover:bg-slate-50"
+                  isActive ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'
                 }`
               }
             >
@@ -361,12 +351,10 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-xs text-slate-900 truncate">
-                    {user.name.replace(/\s*\([^)]*\)/g, "").trim()}
+                    {user.name.replace(/\s*\([^)]*\)/g, '').trim()}
                   </p>
                   <span className="text-[10px] text-slate-500 block truncate">
-                    {user.role === "ADMIN"
-                      ? "Safety Administrator"
-                      : "Citizen Contributor"}
+                    {user.role === 'ADMIN' ? 'Safety Administrator' : 'Citizen Contributor'}
                   </span>
                 </div>
               </div>

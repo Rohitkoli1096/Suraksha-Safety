@@ -14,12 +14,20 @@ import {
   RefreshCw,
   Trash2,
   Database,
+  Map,
+  Navigation,
+  Mic,
+  Radio,
+  Sparkles,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { UserSettings } from '../types';
 import { useAuthStore } from '../store/authStore';
 import { useSOSStore } from '../store/sosStore';
+import { useVoiceSOSStore } from '../store/voiceSOSStore';
 import { offlineEmergencyCache } from '../utils/offlineEmergencyCache';
+import { getDownloadedRoutes, clearAllOfflineTiles, formatBytes } from '../utils/offlineMapTileManager';
 import { PWAInstallButton } from '../components/PWAInstallButton';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -27,6 +35,14 @@ export const SettingsPage: React.FC = () => {
   const { user } = useAuthStore();
   const { queuedAlertsCount, syncOfflineQueue } = useSOSStore();
   const { isInstallable, isInstalled } = usePWAInstall();
+  const {
+    isListening: voiceIsListening,
+    startListening: startVoiceListening,
+    stopListening: stopVoiceListening,
+    setModalOpen: setVoiceModalOpen,
+    updateConfig: updateVoiceConfig,
+    testTrigger: testVoiceTrigger,
+  } = useVoiceSOSStore();
 
   const [cachedContacts, setCachedContacts] = useState(() =>
     offlineEmergencyCache.getCachedEmergencyContacts()
@@ -41,6 +57,11 @@ export const SettingsPage: React.FC = () => {
     smsAlertsEnabled: true,
     pushNotificationsEnabled: true,
     shakeToSOSGestureEnabled: true,
+    voiceSOSEnabled: true,
+    voiceSOSKeyword: 'bachao',
+    voiceSOSSensitivity: 'BALANCED',
+    voiceSOSPocketMode: true,
+    voiceSOSLanguage: 'en-IN',
     highContrastTheme: false,
     theme: 'system',
   });
@@ -53,16 +74,32 @@ export const SettingsPage: React.FC = () => {
       const res = await api.get<UserSettings>('/user/settings');
       if (res.success && res.data) {
         setSettings(res.data);
+        if (res.data.voiceSOSKeyword) {
+          updateVoiceConfig({
+            keyword: res.data.voiceSOSKeyword,
+            pocketMode: res.data.voiceSOSPocketMode ?? true,
+            sensitivity: res.data.voiceSOSSensitivity ?? 'BALANCED',
+            language: res.data.voiceSOSLanguage ?? 'en-IN',
+          });
+        }
       }
       setLoading(false);
     }
     loadSettings();
-  }, []);
+  }, [updateVoiceConfig]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await api.put('/user/settings', settings);
     if (res.success) {
+      if (settings.voiceSOSKeyword) {
+        updateVoiceConfig({
+          keyword: settings.voiceSOSKeyword,
+          pocketMode: settings.voiceSOSPocketMode,
+          sensitivity: settings.voiceSOSSensitivity,
+          language: settings.voiceSOSLanguage,
+        });
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     }
@@ -169,7 +206,195 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 2: Notification & Dispatch Channels */}
+        {/* Section 2: Voice SOS & Hands-Free Speech Trigger */}
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 flex items-center gap-2">
+              <Mic className="w-4 h-4 text-emerald-600" />
+              <span>Voice SOS &amp; Hands-Free Speech Recognition (Web Speech API)</span>
+            </h3>
+            <span
+              className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full self-start sm:self-auto flex items-center gap-1.5 ${
+                voiceIsListening
+                  ? 'bg-emerald-100 text-emerald-800 animate-pulse'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {voiceIsListening && <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />}
+              <span>{voiceIsListening ? 'Voice SOS Live' : 'Voice SOS Standby'}</span>
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-600">
+            Allows initiating emergency alerts by speaking a designated keyword, even when your screen is locked or the device is stored inside a pocket.
+          </p>
+
+          <div className="space-y-4 text-xs">
+            {/* Master Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+              <div>
+                <p className="font-bold text-slate-900">Enable Voice SOS Recognition</p>
+                <p className="text-[11px] text-slate-500">
+                  Continuous background listening via Web Speech Recognition API.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (voiceIsListening) {
+                      stopVoiceListening();
+                    } else {
+                      await startVoiceListening();
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer transition-colors ${
+                    voiceIsListening
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
+                >
+                  {voiceIsListening ? 'Stop' : 'Start Mic'}
+                </button>
+                <input
+                  type="checkbox"
+                  checked={settings.voiceSOSEnabled ?? true}
+                  onChange={(e) =>
+                    setSettings({ ...settings, voiceSOSEnabled: e.target.checked })
+                  }
+                  className="w-5 h-5 accent-emerald-600 rounded cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Custom Emergency Keyword */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Custom Trigger Keyword</span>
+                </label>
+                <span className="text-[11px] text-slate-400">Word that triggers emergency SOS</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={settings.voiceSOSKeyword || 'bachao'}
+                  onChange={(e) =>
+                    setSettings({ ...settings, voiceSOSKeyword: e.target.value.toLowerCase() })
+                  }
+                  placeholder="e.g. bachao, help, red alert"
+                  className="flex-1 px-4 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl font-semibold focus:ring-2 focus:ring-indigo-600"
+                />
+              </div>
+
+              {/* Presets */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+                  Presets:
+                </span>
+                {['bachao', 'help me', 'emergency', 'red alert', 'suraksha'].map((kw) => (
+                  <button
+                    key={kw}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, voiceSOSKeyword: kw })}
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      settings.voiceSOSKeyword?.toLowerCase() === kw
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    {kw}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pocket & Screen Lock Mode */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <div>
+                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Pocket &amp; Locked-Screen Protection Mode</span>
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Activates silent Web Audio keep-alive oscillator &amp; MediaSession registration so mobile OS doesn&apos;t suspend listening when screen turns off.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.voiceSOSPocketMode ?? true}
+                onChange={(e) =>
+                  setSettings({ ...settings, voiceSOSPocketMode: e.target.checked })
+                }
+                className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+              />
+            </div>
+
+            {/* Sensitivity & Language Controls */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  Recognition Sensitivity
+                </label>
+                <select
+                  value={settings.voiceSOSSensitivity || 'BALANCED'}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      voiceSOSSensitivity: e.target.value as any,
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="HIGH">High (Fuzzy Match + Built-in Emergency Words)</option>
+                  <option value="BALANCED">Balanced (Custom Keyword + Core Distress Phrases)</option>
+                  <option value="LOW">Strict (Exact Custom Keyword Only)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  Speech Accent / Dialect
+                </label>
+                <select
+                  value={settings.voiceSOSLanguage || 'en-IN'}
+                  onChange={(e) =>
+                    setSettings({ ...settings, voiceSOSLanguage: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="en-IN">English (India) - en-IN</option>
+                  <option value="hi-IN">Hindi (India) - hi-IN</option>
+                  <option value="en-US">English (US) - en-US</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Interactive Modal & Test Button */}
+            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setVoiceModalOpen(true)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                <span>Open Voice SOS Radar &amp; Speech Monitor</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => testVoiceTrigger(settings.voiceSOSKeyword || 'bachao')}
+                className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 rounded-xl font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Test Simulated SOS Trigger</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Notification & Dispatch Channels */}
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
           <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 flex items-center gap-2">
             <Bell className="w-4 h-4 text-indigo-600" />
@@ -287,6 +512,48 @@ export const SettingsPage: React.FC = () => {
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Sync Queued Alerts ({queuedAlertsCount})</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Pre-downloaded Offline Map Tiles Storage */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                <Map className="w-4 h-4 text-indigo-600" />
+                <span>Pre-Downloaded Route Map Tiles:</span>
+              </span>
+              <span className="font-extrabold text-indigo-600">
+                {getDownloadedRoutes().length} Corridor(s) Cached (
+                {formatBytes(getDownloadedRoutes().reduce((a, b) => a + (b.sizeBytes || 0), 0))})
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Corridor map tiles are stored in browser CacheStorage so that full street navigation remains functional during cellular dropouts and tunnel transit.
+            </p>
+            <div className="flex items-center gap-2 pt-1">
+              <Link
+                to="/routes"
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Manage in Routes Page</span>
+              </Link>
+              {getDownloadedRoutes().length > 0 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Clear all offline map tiles from storage?')) {
+                      await clearAllOfflineTiles();
+                      setOfflineSyncMessage('Offline map tile cache successfully purged.');
+                      setTimeout(() => setOfflineSyncMessage(null), 3000);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Purge Tile Cache</span>
                 </button>
               )}
             </div>

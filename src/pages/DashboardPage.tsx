@@ -23,6 +23,7 @@ import { SafetyRadar } from '../components/SafetyRadar';
 import { AudioEvidenceRecorder } from '../components/AudioEvidenceRecorder';
 import { EmergencyQuickShare } from '../components/EmergencyQuickShare';
 import { FakeCallModal } from '../components/FakeCallModal';
+import { VoiceSOSTriggerButton } from '../components/VoiceSOSTriggerButton';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -175,6 +176,9 @@ export const DashboardPage: React.FC = () => {
           </p>
         </NavLink>
       </div>
+
+      {/* Voice SOS Hands-Free Trigger Banner */}
+      <VoiceSOSTriggerButton variant="full" />
 
       {/* Main 2-Column Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
