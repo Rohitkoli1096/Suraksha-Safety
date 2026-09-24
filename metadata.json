@@ -1,0 +1,6 @@
+{
+  "name": "Suraksha SafeCity - Smart India Safety & Emergency SOS Platform",
+  "description": "Full-stack smart citizen safety platform featuring real-time SOS alerts, emergency contact dispatch, safe route navigation, incident reporting, journey countdown timer, and community safety feed.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#311042" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e11d48" />
+      <stop offset="100%" stop-color="#9333ea" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+  
+  <!-- Background rounded canvas -->
+  <rect width="512" height="512" rx="104" fill="url(#bgGrad)" />
+  
+  <!-- Outer glowing pulse rings -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#e11d48" stroke-width="3" stroke-opacity="0.25" stroke-dasharray="8 8" />
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.35" />
+
+  <!-- Shield Shape -->
+  <g filter="url(#shadow)">
+    <path d="M256 96 L376 148 C376 270 256 368 256 396 C256 368 136 270 136 148 Z" fill="url(#shieldGrad)" />
+    <!-- Inner Shield Inset -->
+    <path d="M256 120 L352 164 C352 260 256 342 256 368 C256 342 160 260 160 164 Z" fill="#0f172a" opacity="0.45" />
+  </g>
+
+  <!-- Central Emergency Beacon / Suraksha Star -->
+  <!-- Cross / Star of Protection -->
+  <path d="M256 168 L272 232 L336 248 L272 264 L256 328 L240 264 L176 248 L240 232 Z" fill="#ffffff" />
+  <circle cx="256" cy="248" r="14" fill="url(#accentGrad)" />
+
+  <!-- Signal radar waves -->
+  <path d="M292 208 C314 230 314 266 292 288" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.9" />
+  <path d="M220 208 C198 230 198 266 220 288" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.9" />
+</svg>

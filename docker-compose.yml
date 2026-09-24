@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: suraksha-safecity-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongo:27017/suraksha
+      - JWT_SECRET=suraksha_prod_docker_secret_key_2026
+      - JWT_REFRESH_SECRET=suraksha_prod_docker_refresh_secret_2026
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: always
+
+  mongo:
+    image: mongo:7.0
+    container_name: suraksha-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: always
+
+volumes:
+  mongo-data:
