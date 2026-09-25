@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, MicOff, Smartphone, Radio } from 'lucide-react';
+import { Mic, MicOff, Smartphone, Radio, Settings2, ShieldCheck } from 'lucide-react';
 import { useVoiceSOSStore } from '../store/voiceSOSStore';
 
 interface VoiceSOSTriggerButtonProps {
@@ -29,12 +29,12 @@ export const VoiceSOSTriggerButton: React.FC<VoiceSOSTriggerButtonProps> = ({
       <button
         type="button"
         onClick={handleClick}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
           isListening
-            ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-300 shadow-2xs hover:bg-emerald-500/20'
-            : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100/80'
+            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
         } ${className}`}
-        title={`Voice SOS: ${isListening ? 'Active (Keyword: ' + config.keyword + ')' : 'Tap to configure & enable'}`}
+        title={`Hands-Free Voice SOS: ${isListening ? 'Armed (Keyword: "' + config.keyword + '")' : 'Configure keyword'}`}
       >
         {isListening ? (
           <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
@@ -44,11 +44,11 @@ export const VoiceSOSTriggerButton: React.FC<VoiceSOSTriggerButtonProps> = ({
         <span className="hidden sm:inline">
           {isListening ? `Voice SOS: "${config.keyword}"` : 'Voice SOS'}
         </span>
-        <span className="sm:hidden">
+        <span className="sm:hidden font-medium">
           {isListening ? 'Voice SOS ON' : 'Voice SOS'}
         </span>
         {isListening && isPocketModeActive && (
-          <span title="Pocket Mode Active" className="inline-flex items-center">
+          <span title="Pocket Detection Armed" className="inline-flex items-center text-slate-400">
             <Smartphone className="w-3 h-3 text-indigo-600" />
           </span>
         )}
@@ -58,53 +58,57 @@ export const VoiceSOSTriggerButton: React.FC<VoiceSOSTriggerButtonProps> = ({
 
   if (variant === 'full') {
     return (
-      <button
-        type="button"
+      <div
         onClick={handleClick}
-        className={`w-full p-4 rounded-2xl border transition-all text-left flex items-center justify-between shadow-xs cursor-pointer ${
-          isListening
-            ? 'bg-emerald-50/80 border-emerald-300 hover:bg-emerald-100/80'
-            : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
-        } ${className}`}
+        className={`w-full p-4 sm:p-5 rounded-2xl border transition-all text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer bg-slate-900 text-white border-slate-800 hover:border-slate-700 shadow-md ${className}`}
       >
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-4">
           <div
             className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-              isListening ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              isListening ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'
             }`}
           >
             {isListening ? (
-              <Mic className="w-5 h-5 animate-pulse" />
+              <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
             ) : (
               <MicOff className="w-5 h-5" />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-900">
-                Voice SOS Trigger (Web Speech)
-              </span>
+              <h4 className="font-bold text-sm text-white">
+                Hands-Free Voice SOS Guardian
+              </h4>
               <span
-                className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
                   isListening
-                    ? 'bg-emerald-100 text-emerald-800 animate-pulse'
-                    : 'bg-slate-100 text-slate-600'
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/60'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
                 }`}
               >
-                {isListening ? 'Active' : 'Configure'}
+                {isListening ? 'MONITORING ACTIVE' : 'STANDBY'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {isListening
-                ? `Say "${config.keyword}" anytime (Pocket Mode: ${isPocketModeActive ? 'Armed' : 'Off'})`
-                : 'Hands-free emergency activation via custom spoken keyword'}
+            <p className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>Keyword: <strong className="text-emerald-400 font-semibold font-mono">"{config.keyword}"</strong></span>
+              <span className="text-slate-600">•</span>
+              <span>Pocket Mode: <strong className="text-slate-200">{isPocketModeActive ? 'Armed' : 'Off'}</strong></span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">Web Speech Engine</span>
             </p>
           </div>
         </div>
-        <div className="text-right pl-3 shrink-0">
-          <span className="text-xs font-bold text-indigo-600">Open Controls &rarr;</span>
+
+        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+          <button
+            type="button"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            <span>Configure</span>
+          </button>
         </div>
-      </button>
+      </div>
     );
   }
 
@@ -113,14 +117,14 @@ export const VoiceSOSTriggerButton: React.FC<VoiceSOSTriggerButtonProps> = ({
     <button
       type="button"
       onClick={handleClick}
-      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
         isListening
-          ? 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 animate-pulse'
-          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+          ? 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
+          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
       } ${className}`}
       title="Hands-free Voice SOS trigger settings"
     >
-      {isListening ? <Mic className="w-4 h-4" /> : <Mic className="w-4 h-4 text-slate-500" />}
+      {isListening ? <Radio className="w-3.5 h-3.5 animate-pulse" /> : <Mic className="w-3.5 h-3.5 text-slate-500" />}
       <span className="hidden lg:inline">
         {isListening ? `Voice SOS ("${config.keyword}")` : 'Voice SOS'}
       </span>

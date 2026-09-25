@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   ShieldAlert,
   MapPin,
@@ -11,11 +11,31 @@ import {
   ArrowRight,
   Eye,
   CheckCircle,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 export const LandingPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, login } = useAuthStore();
+  const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleInstantDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const res = await login('citizen@suraksha.in', 'citizen123');
+      if (res.success) {
+        navigate('/home');
+      } else {
+        navigate('/login');
+      }
+    } catch {
+      navigate('/login');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -47,15 +67,36 @@ export const LandingPage: React.FC = () => {
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <NavLink
               to={user ? '/emergency' : '/login'}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-base shadow-lg shadow-rose-900/40 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-base shadow-lg shadow-rose-900/40 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <ShieldAlert className="w-5 h-5" />
               {user ? 'Open Emergency Command' : 'Get Protected Now'}
             </NavLink>
 
+            {!user && (
+              <button
+                type="button"
+                disabled={demoLoading}
+                onClick={handleInstantDemo}
+                className="w-full sm:w-auto px-7 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base shadow-lg shadow-indigo-900/40 border border-indigo-400/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-60"
+              >
+                {demoLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Entering Demo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-5 h-5 text-amber-300" />
+                    <span>Instant Demo Login</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <NavLink
-              to={user ? '/routes' : '/login'}
-              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-base border border-slate-700 flex items-center justify-center gap-2 transition-colors"
+              to={user ? '/routes' : '/routes'}
+              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-base border border-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <span>Explore Safe Routes</span>
               <ArrowRight className="w-4 h-4" />

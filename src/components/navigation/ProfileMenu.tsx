@@ -8,26 +8,61 @@ import {
   ChevronDown,
   ShieldCheck,
   Lock,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
 export const ProfileMenu: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, login } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useClickOutside(menuRef, () => setIsOpen(false), isOpen);
 
+  const handleInstantDemoLogin = async () => {
+    setIsDemoLoading(true);
+    try {
+      const res = await login('citizen@suraksha.in', 'citizen123');
+      if (res.success) {
+        navigate('/home');
+      } else {
+        navigate('/login');
+      }
+    } catch {
+      navigate('/login');
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
+
   if (!user) {
     return (
-      <NavLink
-        to="/login"
-        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
-      >
-        Sign In
-      </NavLink>
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <button
+          type="button"
+          disabled={isDemoLoading}
+          onClick={handleInstantDemoLogin}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors shadow-xs cursor-pointer disabled:opacity-60"
+          title="Instant 1-Click Demo Login as Citizen"
+        >
+          {isDemoLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Zap className="w-3.5 h-3.5 fill-slate-950" />
+          )}
+          <span>Demo Login</span>
+        </button>
+        <NavLink
+          to="/login"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer"
+        >
+          Sign In
+        </NavLink>
+      </div>
     );
   }
 

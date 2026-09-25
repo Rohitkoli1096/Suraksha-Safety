@@ -122,50 +122,54 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
   const totalStorageBytes = allDownloaded.reduce((acc, curr) => acc + (curr.sizeBytes || 0), 0);
 
   return (
-    <div className={`rounded-2xl border transition-all ${isCached ? 'bg-emerald-50/70 border-emerald-200' : 'bg-white border-slate-200/90'} p-4 shadow-xs ${className}`}>
+    <div className={`rounded-2xl border transition-all ${isCached ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-900 border-slate-800 text-white'} p-3 sm:px-4 sm:py-3 shadow-sm ${className}`}>
       {/* Top row: Status & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
               isCached
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
             }`}
           >
-            {isCached ? <CheckCircle2 className="w-5 h-5" /> : <FolderDown className="w-5 h-5" />}
+            {isCached ? <CheckCircle2 className="w-4 h-4" /> : <DownloadCloud className="w-4 h-4" />}
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-extrabold text-sm text-slate-900 leading-tight">
-                {isCached ? 'Offline Route Map Cached' : 'Offline Route Map Pre-Download'}
+              <h4 className="font-bold text-xs sm:text-sm text-white leading-tight">
+                {isCached ? 'Offline Route Corridor Cached' : 'Offline Route Corridor Sync'}
               </h4>
-              {isCached && (
-                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
-                  Ready Offline
-                </span>
-              )}
+              <span
+                className={`text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                  isCached
+                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
+                    : 'bg-indigo-950 text-indigo-400 border border-indigo-800/60'
+                }`}
+              >
+                {isCached ? 'OFFLINE READY' : 'CELLULAR FALLBACK'}
+              </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-400 mt-0.5">
               {isCached && currentRouteMeta
-                ? `${currentRouteMeta.tileCount} tiles saved (${formatBytes(currentRouteMeta.sizeBytes)}) • Fully navigable without cellular network`
-                : 'Cache map tiles along this travel corridor for uninterrupted navigation in cellular dead-zones.'}
+                ? `${currentRouteMeta.tileCount} map tiles cached (${formatBytes(currentRouteMeta.sizeBytes)}) • Continuous routing in dead-zones`
+                : 'Pre-cache map vector tiles along this transit corridor to maintain GPS navigation without internet.'}
             </p>
           </div>
         </div>
 
         {/* Action Button & Modal Trigger */}
-        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
           {allDownloaded.length > 0 && (
             <button
               type="button"
               onClick={() => setShowManagerModal(true)}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Manage Offline Corridors"
             >
-              <HardDrive className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Storage ({formatBytes(totalStorageBytes)})</span>
+              <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden md:inline font-mono">{formatBytes(totalStorageBytes)}</span>
             </button>
           )}
 
@@ -175,8 +179,8 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
                 type="button"
                 onClick={handleStartDownload}
                 disabled={progress?.status === 'downloading'}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-800 hover:bg-emerald-100 border border-emerald-300 transition-colors flex items-center gap-1 cursor-pointer"
-                title="Re-download latest tiles"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 hover:text-emerald-200 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Refresh offline corridor tiles"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Update</span>
@@ -184,10 +188,10 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
               <button
                 type="button"
                 onClick={() => handleDelete(activeRoute.id)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                title="Delete downloaded tiles for this corridor"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 transition-colors cursor-pointer"
+                title="Delete cached tiles for this corridor"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
@@ -195,7 +199,7 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
               type="button"
               onClick={handleStartDownload}
               disabled={progress?.status === 'downloading'}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:scale-98 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
             >
               {progress?.status === 'downloading' ? (
                 <>
@@ -204,8 +208,8 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
                 </>
               ) : (
                 <>
-                  <DownloadCloud className="w-4 h-4" />
-                  <span>Download Offline Tiles</span>
+                  <DownloadCloud className="w-3.5 h-3.5" />
+                  <span>Pre-Download Route</span>
                 </>
               )}
             </button>
@@ -215,19 +219,19 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
 
       {/* Progress Bar (While Downloading) */}
       {progress && progress.status === 'downloading' && (
-        <div className="mt-3.5 pt-3 border-t border-slate-200/80 space-y-1.5 animate-in fade-in duration-200">
+        <div className="mt-3 pt-3 border-t border-slate-800 space-y-1.5 animate-in fade-in duration-200">
           <div className="flex items-center justify-between text-xs font-semibold">
-            <span className="text-slate-700 flex items-center gap-1.5">
-              <Loader2 className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
+            <span className="text-slate-300 flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
               <span>Caching zoom levels 12-15 along {activeRoute.name}...</span>
             </span>
-            <span className="text-indigo-700 font-bold">
+            <span className="text-indigo-400 font-mono font-bold">
               {progress.downloadedTiles} / {progress.totalTiles} tiles ({progress.percent}%)
             </span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div
-              className="bg-indigo-600 h-2 rounded-full transition-all duration-150 ease-out"
+              className="bg-indigo-500 h-1.5 rounded-full transition-all duration-150 ease-out"
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -236,8 +240,8 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
 
       {/* Completed Banner */}
       {progress && progress.status === 'completed' && (
-        <div className="mt-3 pt-3 border-t border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="mt-3 pt-3 border-t border-slate-800 text-xs font-medium text-emerald-400 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>
             Successfully pre-downloaded {progress.downloadedTiles} map tiles ({formatBytes(progress.sizeBytes || 0)}). Offline corridor active!
           </span>
@@ -246,8 +250,8 @@ export const OfflineRouteTileDownloader: React.FC<OfflineRouteTileDownloaderProp
 
       {/* Error Banner */}
       {progress && progress.status === 'error' && (
-        <div className="mt-3 pt-3 border-t border-rose-200 text-xs font-bold text-rose-700 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div className="mt-3 pt-3 border-t border-slate-800 text-xs font-medium text-rose-400 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
           <span>{progress.errorMessage || 'Tile download failed. Check network connection.'}</span>
         </div>
       )}
