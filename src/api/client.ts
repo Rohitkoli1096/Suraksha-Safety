@@ -2,7 +2,8 @@
 import { ApiResponse } from '../types';
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || '/api'
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://suraksha-safety-1.onrender.com/api'
 ).replace(/\/+$/, '');
 
 class ApiClient {
