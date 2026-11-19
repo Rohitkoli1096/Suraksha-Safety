@@ -1,40 +1,135 @@
+
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbStore } from '../services/dbStore.js';
+import { dbStore, type StoredUser } from '../services/dbStore.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'suraksha_production_super_secret_jwt_key_2026_change_in_prod';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'suraksha_production_refresh_token_super_secret_2026';
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'suraksha-local-development-secret-change-before-deployment');
+
+const JWT_REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET ||
+  (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'suraksha-local-refresh-secret-change-before-deployment');
+
+function validateJwtSecrets(): boolean {
+  return Boolean(JWT_SECRET && JWT_REFRESH_SECRET);
+}
+
+function createTokens(user: StoredUser) {
+  if (!validateJwtSecrets()) {
+    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be configured.');
+  }
+
+  const accessToken = jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    },
+    JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+
+  const refreshToken = jwt.sign(
+    { id: user.id },
+    JWT_REFRESH_SECRET,
+    { expiresIn: '30d' }
+  );
+
+  return { accessToken, refreshToken };
+}
+
+function safeUser(user: StoredUser) {
+  const { passwordHash: _passwordHash, refreshToken: _refreshToken, ...result } = user;
+  return result;
+}
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
+    const { name, email, password, phone } = req.body ?? {};
 
-    if (!name || !email || !password || !phone) {
-      res.status(400).json({ success: false, message: 'All fields (name, email, password, phone) are required.' });
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      typeof phone !== 'string'
+    ) {
+      res.status(400).json({
+        success: false,
+        message: 'Name, email, password and phone are required.',
+      });
       return;
     }
 
-    const existingUser = dbStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+
+    if (cleanName.length < 2 || cleanName.length > 100) {
+      res.status(400).json({
+        success: false,
+        message: 'Name must contain between 2 and 100 characters.',
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      res.status(400).json({
+        success: false,
+        message: 'Enter a valid email address.',
+      });
+      return;
+    }
+
+    if (password.length < 8 || password.length > 128) {
+      res.status(400).json({
+        success: false,
+        message: 'Password must contain between 8 and 128 characters.',
+      });
+      return;
+    }
+
+    if (cleanPhone.length < 7 || cleanPhone.length > 20) {
+      res.status(400).json({
+        success: false,
+        message: 'Enter a valid phone number.',
+      });
+      return;
+    }
+
+    const existingUser = dbStore.users.find(
+      (user) => user.email.toLowerCase() === cleanEmail
+    );
+
     if (existingUser) {
-      res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+      res.status(409).json({
+        success: false,
+        message: 'An account with this email already exists.',
+      });
       return;
     }
 
-    const salt = bcrypt.genSaltSync(10);
-    const passwordHash = bcrypt.hashSync(password, salt);
+    const passwordHash = await bcrypt.hash(password, 12);
+    const now = new Date().toISOString();
 
-    const userRole: 'USER' | 'ADMIN' | 'RESPONDER' = role === 'ADMIN' ? 'ADMIN' : 'USER';
-    const newUser: import('../services/dbStore.js').StoredUser = {
-      id: `usr_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
+    // Public registration must NEVER assign privileged roles.
+    const newUser: StoredUser = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      name: cleanName,
+      email: cleanEmail,
       passwordHash,
-      phone: phone.trim(),
-      role: userRole,
+      phone: cleanPhone,
+      role: 'USER',
       avatarUrl: '',
       bloodGroup: '',
       address: '',
@@ -49,22 +144,15 @@ router.post('/register', async (req, res) => {
           notifyOnSOS: true,
         },
       ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
 
-    dbStore.users.push(newUser);
-
-    const accessToken = jwt.sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    const refreshToken = jwt.sign({ id: newUser.id }, JWT_REFRESH_SECRET, { expiresIn: '30d' });
+    const { accessToken, refreshToken } = createTokens(newUser);
 
     newUser.refreshToken = refreshToken;
+    dbStore.users.push(newUser);
 
-    // Default settings
     dbStore.settings.set(newUser.id, {
       userId: newUser.id,
       sosCountdownDurationSeconds: 5,
@@ -77,81 +165,112 @@ router.post('/register', async (req, res) => {
       theme: 'system',
     });
 
-    const { passwordHash: _, refreshToken: __, ...userSafe } = newUser;
-
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
+      message: 'Account created successfully.',
       data: {
         accessToken,
         refreshToken,
-        user: userSafe,
+        user: safeUser(newUser),
       },
     });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || 'Registration failed' });
+  } catch (error) {
+    console.error('Registration error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed. Please try again.',
+    });
   }
 });
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body ?? {};
 
-    if (!email || !password) {
-      res.status(400).json({ success: false, message: 'Email and password are required' });
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: 'Email and password are required.',
+      });
       return;
     }
 
-    const user = dbStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
-    if (!user) {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
-      return;
-    }
+    const cleanEmail = email.trim().toLowerCase();
 
-    const passwordMatch = bcrypt.compareSync(password, user.passwordHash);
-    if (!passwordMatch) {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
-      return;
-    }
-
-    const accessToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
-      JWT_SECRET,
-      { expiresIn: '7d' }
+    const user = dbStore.users.find(
+      (item) => item.email.toLowerCase() === cleanEmail
     );
-    const refreshToken = jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, { expiresIn: '30d' });
-    user.refreshToken = refreshToken;
 
-    const { passwordHash: _, refreshToken: __, ...userSafe } = user;
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid email or password.',
+      });
+      return;
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+
+    if (!passwordMatch) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid email or password.',
+      });
+      return;
+    }
+
+    const { accessToken, refreshToken } = createTokens(user);
+
+    user.refreshToken = refreshToken;
+    user.updatedAt = new Date().toISOString();
 
     res.json({
       success: true,
-      message: 'Authentication successful',
+      message: 'Authentication successful.',
       data: {
         accessToken,
         refreshToken,
-        user: userSafe,
+        user: safeUser(user),
       },
     });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || 'Login failed' });
+  } catch (error) {
+    console.error('Login error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Login failed. Please try again.',
+    });
   }
 });
 
 // GET /api/auth/me
 router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const user = dbStore.users.find((u) => u.id === req.user?.id);
+    const user = dbStore.users.find(
+      (item) => item.id === req.user?.id
+    );
+
     if (!user) {
-      res.status(404).json({ success: false, message: 'User account not found' });
+      res.status(404).json({
+        success: false,
+        message: 'User account not found.',
+      });
       return;
     }
 
-    const { passwordHash: _, refreshToken: __, ...userSafe } = user;
-    res.json({ success: true, data: userSafe });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: 'Failed to retrieve profile' });
+    res.json({
+      success: true,
+      data: safeUser(user),
+    });
+  } catch (error) {
+    console.error('Profile retrieval error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve profile.',
+    });
   }
 });
 
