@@ -1,15 +1,21 @@
+
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { dbStore } from '../services/dbStore.js';
-import { UserModel } from '../models/User.js';
-import { isDbFallback } from '../config/db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'suraksha_production_super_secret_jwt_key_2026_change_in_prod';
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'suraksha-local-development-secret-change-before-deployment');
+
+const VALID_ROLES = ['USER', 'ADMIN', 'RESPONDER'] as const;
+
+export type UserRole = (typeof VALID_ROLES)[number];
 
 export interface AuthenticatedUserPayload {
   id: string;
   email: string;
-  role: 'USER' | 'ADMIN' | 'RESPONDER';
+  role: UserRole;
   name: string;
 }
 
@@ -17,35 +23,97 @@ export interface AuthRequest extends Request {
   user?: AuthenticatedUserPayload;
 }
 
-export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+function isValidPayload(
+  payload: string | jwt.JwtPayload
+): payload is jwt.JwtPayload & AuthenticatedUserPayload {
+  if (typeof payload === 'string') return false;
+
+  return (
+    typeof payload.id === 'string' &&
+    typeof payload.email === 'string' &&
+    typeof payload.name === 'string' &&
+    VALID_ROLES.includes(payload.role as UserRole)
+  );
+}
+
+export function authenticateToken(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!JWT_SECRET) {
+    res.status(500).json({
+      success: false,
+      message: 'Authentication is not configured on this server.',
+    });
+    return;
+  }
+
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({
+      success: false,
+      message: 'Access token required. Please sign in.',
+    });
+    return;
+  }
+
+  const token = authHeader.slice(7).trim();
 
   if (!token) {
-    res.status(401).json({ success: false, message: 'Access token required. Please sign in.' });
+    res.status(401).json({
+      success: false,
+      message: 'Access token is missing.',
+    });
     return;
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthenticatedUserPayload;
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!isValidPayload(decoded)) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid authentication token.',
+      });
+      return;
+    }
+
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      name: decoded.name,
+    };
+
     next();
-  } catch (err: any) {
-    res.status(403).json({ success: false, message: 'Invalid or expired session token. Please log in again.' });
+  } catch {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid or expired session. Please log in again.',
+    });
   }
 }
 
-export function requireRole(allowedRoles: ('USER' | 'ADMIN' | 'RESPONDER')[]) {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+export function requireRole(allowedRoles: UserRole[]) {
+  return (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): void => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: 'Unauthorized. Authentication required.' });
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required.',
+      });
       return;
     }
 
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        message: `Forbidden. This action requires one of the following roles: ${allowedRoles.join(', ')}`,
+        message: 'You do not have permission to perform this action.',
       });
       return;
     }
